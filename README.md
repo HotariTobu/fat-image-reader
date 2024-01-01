@@ -7,7 +7,7 @@ Read a FAT12/FAT16/FAT32 formatted image file.
 Compile `fat.c` and run the command.
 
 ```sh
-fat IMAGE_FILE [FILE]
+fat IMAGE_FILE [...FILE]
 ```
 
 The example loads `foo.img` and starts interactive reading.
