@@ -104,6 +104,8 @@ s32 toWide(wchar_t **dist, const char *src)
         return -3;
     }
 
+    (*dist)[bufferSize] = '\0';
+
     return size;
 }
 
@@ -1393,39 +1395,22 @@ void printData(Entry *entry)
         printf("%s", bytes);
     }
 
-    puts("");
-
     closeFile(file);
 }
 #pragma endregion
 
-// エントリのメタ情報を表示する
-void printMeta(const Entry *entry)
-{
-    wchar_t basename[256];
-    wchar_t extension[256];
-    getBasenameAndExtension(entry->name, basename, extension);
-
-    printf("name=%ls ", basename);
-    printf("ext=%ls ", extension);
-    printf("cTime=%d:%d:%d ", entry->createdAt->hour, entry->createdAt->minute, entry->createdAt->second);
-    printf("cDate=%d/%d/%d ", entry->createdAt->year, entry->createdAt->month, entry->createdAt->dayOfMonth);
-    printf("clusLow=%d ", entry->cluster & 0xfff);
-    printf("size=%d\n", entry->size);
-}
-
 int main(int argc, char *argv[])
 {
-    char *imageFilename = "os23flp.img";
-    wchar_t *targetFilename = L"HELLO.TXT";
+    char *imageFilename;
 
-    if (argc > 1)
+    if (argc == 1)
+    {
+        printf("Usage: %s IMAGE_FILE [...FILE]\n", argv[0]);
+        return 1;
+    }
+    else
     {
         imageFilename = argv[1];
-    }
-    if (argc > 2)
-    {
-        toWide(&targetFilename, argv[2]);
     }
 
     Image *image;
@@ -1435,17 +1420,28 @@ int main(int argc, char *argv[])
         return result;
     }
 
-    Entry *entry;
-    result = openEntry(&entry, image, targetFilename);
-    if (result == 0)
-    {
-        printMeta(entry);
-        printData(entry);
-        closeEntry(entry);
-    }
-
     if (argc > 2)
     {
+        wchar_t *targetFilename;
+
+        for (u8 i = 2; i < argc; i++)
+        {
+            toWide(&targetFilename, argv[i]);
+
+            Entry *entry;
+            result = openEntry(&entry, image, targetFilename);
+            if (result == 0)
+            {
+                printInfo(entry);
+                puts("/=================================================================================================\\");
+                printData(entry);
+                puts("\\=================================================================================================/");
+                closeEntry(entry);
+            }
+        }
+
+        free(targetFilename);
+        closeImage(image);
         return result;
     }
 
@@ -1453,6 +1449,7 @@ int main(int argc, char *argv[])
     result = openEntry(&currentDirectory, image, L"/");
     if (result)
     {
+        closeImage(image);
         return result;
     }
 
@@ -1522,8 +1519,6 @@ int main(int argc, char *argv[])
     }
 
     closeEntry(currentDirectory);
-
     closeImage(image);
-
     return result;
 }
